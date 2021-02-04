@@ -16,7 +16,7 @@ import java.util.List;
 @Transactional
 public class JPACourseDAO implements CourseDAO
 {
-    private Log log = LogFactory.getLog(JPACourseDAO.class);
+    private static final Log LOG = LogFactory.getLog(JPACourseDAO.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -33,7 +33,37 @@ public class JPACourseDAO implements CourseDAO
     @Transactional(readOnly = true)
     @Override
     public List<Course> findAll() {
-        return entityManager.createQuery("select c from Course c", Course.class).
-                getResultList();
+        return entityManager.createNamedQuery("Course.findAll", Course.class).getResultList();
+        /*return entityManager.createQuery("select c from Course c", Course.class).
+                getResultList();*/
+    }
+
+    @Override
+    public List<Course> findByTitle(String title) {
+        TypedQuery<Course> query = entityManager.
+                createQuery("select c from Course c where c.title LIKE :title", Course.class);
+        query.setParameter("title", "%" + title + "%");
+        return query.getResultList();
+    }
+
+    @Override
+    public void insert(Course course) {
+        entityManager.persist(course);
+        LOG.info("Course saved with id: " + course.getId());
+    }
+
+    @Override
+    public void update(Course course) {
+        if (course.getId() != 0 &&
+                entityManager.find(Course.class, course.getId()) != null) {
+            entityManager.merge(course);
+            LOG.info("Course updated with id: " + course.getId());
+        }
+    }
+
+    @Override
+    public void delete(int id) {
+        entityManager.remove(entityManager.find(Course.class, id));
+        LOG.info("Course deleted with id: " + id);
     }
 }
